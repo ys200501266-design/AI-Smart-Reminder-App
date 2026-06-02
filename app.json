@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "AI 智能提醒助手",
+    "slug": "ai-smart-reminder-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#f6f8fb",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.portfolio.aismartreminder"
+    },
+    "android": {
+      "package": "com.portfolio.aismartreminder",
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
+  }
+}
