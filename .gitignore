@@ -12,3 +12,4 @@ yarn-error.log*
 *.mobileprovision
 *.orig.*
 .DS_Store
+expo-start*.log
