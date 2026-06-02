@@ -13,3 +13,4 @@ yarn-error.log*
 *.orig.*
 .DS_Store
 expo-start*.log
+gh-auth*.log
