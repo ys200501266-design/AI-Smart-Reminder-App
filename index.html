@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 智能提醒助手</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="phone-shell">
+      <section class="hero">
+        <p class="eyebrow">AI Smart Reminder App</p>
+        <h1>AI 智能提醒助手</h1>
+        <p class="subtitle">用一句话创建提醒，也可以手动设置通知、震动和重复周期。</p>
+        <div class="stats">
+          <div>
+            <strong id="totalCount">0</strong>
+            <span>全部提醒</span>
+          </div>
+          <div>
+            <strong id="pendingCount">0</strong>
+            <span>待提醒</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>智能输入</h2>
+          <button id="testBtn" class="orange-btn">10 秒测试提醒</button>
+        </div>
+        <label>
+          自然语言提醒
+          <textarea id="naturalText" placeholder="例如：每天下午三点提醒我喝水"></textarea>
+        </label>
+        <p id="parseHint" class="hint"></p>
+        <button id="parseBtn" class="ghost-btn">解析并填入表单</button>
+      </section>
+
+      <section class="panel">
+        <h2>新增提醒</h2>
+        <label>
+          提醒标题
+          <input id="titleInput" placeholder="例如：交作业" />
+        </label>
+        <label>
+          提醒内容
+          <textarea id="contentInput" placeholder="例如：记得提交英语作业"></textarea>
+        </label>
+        <div class="inline">
+          <label>
+            提醒日期
+            <input id="dateInput" type="date" />
+          </label>
+          <label>
+            提醒时间
+            <input id="timeInput" type="time" />
+          </label>
+        </div>
+        <label>
+          是否重复
+          <select id="repeatInput">
+            <option value="none">不重复</option>
+            <option value="daily">每天</option>
+            <option value="weekly">每周</option>
+          </select>
+        </label>
+        <label>
+          提醒方式
+          <select id="alertInput">
+            <option value="notification">通知</option>
+            <option value="vibration">震动</option>
+            <option value="both">通知 + 震动</option>
+          </select>
+        </label>
+        <button id="addBtn" class="primary-btn">创建提醒</button>
+      </section>
+
+      <section class="panel">
+        <h2>提醒列表</h2>
+        <div id="reminderList" class="list"></div>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
