@@ -13,6 +13,12 @@ const repeatText = {
   weekly: "每周",
 };
 
+const statusText = {
+  pending: "待提醒",
+  reminded: "已提醒",
+  completed: "已完成",
+};
+
 const pad = (value) => String(value).padStart(2, "0");
 
 const formatDate = (date) =>
@@ -105,6 +111,10 @@ function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.reminders));
 }
 
+function getTargetTime(reminder) {
+  return new Date(`${reminder.date}T${reminder.time}:00`);
+}
+
 function notify(title, body, alertType) {
   if ((alertType === "notification" || alertType === "both") && "Notification" in window) {
     if (Notification.permission === "granted") {
@@ -121,14 +131,57 @@ function notify(title, body, alertType) {
   alert(`${title}\n${body}`);
 }
 
+async function ensureNotificationPermission(alertType) {
+  if (!(alertType === "notification" || alertType === "both") || !("Notification" in window)) {
+    return true;
+  }
+
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") {
+    alert("浏览器通知权限已被关闭，请在手机浏览器设置里允许通知。");
+    return false;
+  }
+
+  const permission = await Notification.requestPermission();
+  return permission === "granted";
+}
+
+function advanceRepeat(reminder) {
+  const next = getTargetTime(reminder);
+  const step = reminder.repeatType === "daily" ? 1 : 7;
+  while (next.getTime() <= Date.now()) {
+    next.setDate(next.getDate() + step);
+  }
+  return { ...reminder, date: formatDate(next), time: formatTime(next), status: "pending" };
+}
+
+function handleReminderDue(reminder) {
+  notify(reminder.title, reminder.content, reminder.alertType);
+  state.reminders = state.reminders.map((item) => {
+    if (item.id !== reminder.id) return item;
+    return reminder.repeatType === "none" ? { ...item, status: "reminded" } : advanceRepeat(item);
+  });
+  save();
+  render();
+  state.reminders.forEach(scheduleReminder);
+}
+
 function scheduleReminder(reminder) {
   if (state.timers.has(reminder.id)) clearTimeout(state.timers.get(reminder.id));
-  const target = new Date(`${reminder.date}T${reminder.time}:00`);
+  if (reminder.status !== "pending") return;
+  const target = getTargetTime(reminder);
   const delay = target.getTime() - Date.now();
-  if (delay > 0 && reminder.status === "pending") {
-    const timer = setTimeout(() => notify(reminder.title, reminder.content, reminder.alertType), delay);
+  if (delay > 0) {
+    const timer = setTimeout(() => handleReminderDue(reminder), delay);
     state.timers.set(reminder.id, timer);
   }
+}
+
+function checkDueReminders() {
+  const due = state.reminders.find(
+    (reminder) => reminder.status === "pending" && getTargetTime(reminder).getTime() <= Date.now(),
+  );
+  if (due) handleReminderDue(due);
 }
 
 function render() {
@@ -145,13 +198,14 @@ function render() {
   state.reminders.forEach((reminder) => {
     const card = document.createElement("article");
     card.className = `card ${reminder.status === "completed" ? "done" : ""}`;
+    const badgeClass = reminder.status === "pending" ? "" : "done";
     card.innerHTML = `
       <div class="card-head">
         <div>
           <h3>${reminder.title}</h3>
           <p class="card-time">${reminder.date} ${reminder.time} · ${repeatText[reminder.repeatType]}</p>
         </div>
-        <span class="badge ${reminder.status === "completed" ? "done" : ""}">${reminder.status === "completed" ? "已完成" : "待提醒"}</span>
+        <span class="badge ${badgeClass}">${statusText[reminder.status] || "待提醒"}</span>
       </div>
       <p class="card-content">${reminder.content}</p>
       <div class="actions">
@@ -190,7 +244,7 @@ function init() {
     $("parseHint").textContent = parsed.needsConfirmation ? "已尽量解析，请手动确认日期和时间。" : "解析成功，请确认后创建提醒。";
   });
 
-  $("addBtn").addEventListener("click", () => {
+  $("addBtn").addEventListener("click", async () => {
     const reminder = {
       id: String(Date.now()),
       title: $("titleInput").value.trim(),
@@ -202,6 +256,7 @@ function init() {
       status: "pending",
     };
     if (!reminder.title || !reminder.content || !reminder.date || !reminder.time) return alert("请补全提醒信息");
+    await ensureNotificationPermission(reminder.alertType);
     state.reminders.unshift(reminder);
     scheduleReminder(reminder);
     save();
@@ -215,6 +270,13 @@ function init() {
     setTimeout(() => notify("10 秒测试提醒", "如果你看到这条提醒，说明 Demo 功能可用。", "both"), 10000);
     alert("测试提醒已安排，10 秒后触发。");
   });
+
+  window.addEventListener("focus", checkDueReminders);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) checkDueReminders();
+  });
+  setInterval(checkDueReminders, 30000);
+  checkDueReminders();
 
   $("reminderList").addEventListener("click", (event) => {
     const completeId = event.target.dataset.complete;
