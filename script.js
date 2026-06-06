@@ -231,3 +231,11 @@ function init() {
 }
 
 init();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {
+      // The demo still works if the browser blocks service workers.
+    });
+  });
+}
