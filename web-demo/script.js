@@ -5,6 +5,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   reminders: JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"),
   timers: new Map(),
+  repeaters: new Map(),
 };
 
 const repeatText = {
@@ -15,6 +16,7 @@ const repeatText = {
 
 const statusText = {
   pending: "待提醒",
+  ringing: "提醒中",
   reminded: "已提醒",
   completed: "已完成",
 };
@@ -131,6 +133,13 @@ function notify(title, body, alertType) {
   alert(`${title}\n${body}`);
 }
 
+function stopRepeating(id) {
+  if (state.repeaters.has(id)) {
+    clearInterval(state.repeaters.get(id));
+    state.repeaters.delete(id);
+  }
+}
+
 async function ensureNotificationPermission(alertType) {
   if (!(alertType === "notification" || alertType === "both") || !("Notification" in window)) {
     return true;
@@ -155,15 +164,49 @@ function advanceRepeat(reminder) {
   return { ...reminder, date: formatDate(next), time: formatTime(next), status: "pending" };
 }
 
-function handleReminderDue(reminder) {
+function showReminderModal(reminder) {
+  $("modalTitle").textContent = reminder.title;
+  $("modalContent").textContent = reminder.content;
+  $("ackBtn").dataset.ack = reminder.id;
+  $("reminderModal").classList.remove("hidden");
+}
+
+function hideReminderModalIfClear() {
+  const ringing = state.reminders.find((item) => item.status === "ringing");
+  if (!ringing) {
+    $("reminderModal").classList.add("hidden");
+    $("ackBtn").dataset.ack = "";
+  }
+}
+
+function repeatUntilAcknowledged(reminder) {
+  stopRepeating(reminder.id);
+  showReminderModal(reminder);
   notify(reminder.title, reminder.content, reminder.alertType);
+
+  const interval = setInterval(() => {
+    const current = state.reminders.find((item) => item.id === reminder.id);
+    if (!current || current.status !== "ringing") {
+      stopRepeating(reminder.id);
+      hideReminderModalIfClear();
+      return;
+    }
+    showReminderModal(current);
+    notify(current.title, current.content, current.alertType);
+  }, 12000);
+
+  state.repeaters.set(reminder.id, interval);
+}
+
+function handleReminderDue(reminder) {
+  const ringingReminder = { ...reminder, status: "ringing" };
   state.reminders = state.reminders.map((item) => {
     if (item.id !== reminder.id) return item;
-    return reminder.repeatType === "none" ? { ...item, status: "reminded" } : advanceRepeat(item);
+    return ringingReminder;
   });
   save();
   render();
-  state.reminders.forEach(scheduleReminder);
+  repeatUntilAcknowledged(ringingReminder);
 }
 
 function scheduleReminder(reminder) {
@@ -175,6 +218,21 @@ function scheduleReminder(reminder) {
     const timer = setTimeout(() => handleReminderDue(reminder), delay);
     state.timers.set(reminder.id, timer);
   }
+}
+
+function acknowledgeReminder(id) {
+  const target = state.reminders.find((item) => item.id === id);
+  if (!target) return;
+
+  stopRepeating(id);
+  state.reminders = state.reminders.map((item) => {
+    if (item.id !== id) return item;
+    return item.repeatType === "none" ? { ...item, status: "reminded" } : advanceRepeat(item);
+  });
+  save();
+  render();
+  hideReminderModalIfClear();
+  state.reminders.forEach(scheduleReminder);
 }
 
 function checkDueReminders() {
@@ -197,8 +255,8 @@ function render() {
 
   state.reminders.forEach((reminder) => {
     const card = document.createElement("article");
-    card.className = `card ${reminder.status === "completed" ? "done" : ""}`;
-    const badgeClass = reminder.status === "pending" ? "" : "done";
+    card.className = `card ${reminder.status === "completed" ? "done" : ""} ${reminder.status === "ringing" ? "ringing" : ""}`;
+    const badgeClass = reminder.status === "pending" ? "" : reminder.status === "ringing" ? "ringing" : "done";
     card.innerHTML = `
       <div class="card-head">
         <div>
@@ -209,6 +267,7 @@ function render() {
       </div>
       <p class="card-content">${reminder.content}</p>
       <div class="actions">
+        ${reminder.status === "ringing" ? `<button data-ack="${reminder.id}">我知道了</button>` : ""}
         <button data-complete="${reminder.id}">标记完成</button>
         <button class="delete" data-delete="${reminder.id}">删除</button>
       </div>
@@ -230,6 +289,7 @@ function resetForm() {
 function init() {
   resetForm();
   state.reminders.forEach(scheduleReminder);
+  state.reminders.filter((item) => item.status === "ringing").forEach(repeatUntilAcknowledged);
   render();
 
   $("parseBtn").addEventListener("click", () => {
@@ -279,16 +339,29 @@ function init() {
   checkDueReminders();
 
   $("reminderList").addEventListener("click", (event) => {
+    const ackId = event.target.dataset.ack;
     const completeId = event.target.dataset.complete;
     const deleteId = event.target.dataset.delete;
+    if (ackId) {
+      acknowledgeReminder(ackId);
+      return;
+    }
     if (completeId) {
+      stopRepeating(completeId);
       state.reminders = state.reminders.map((item) => (item.id === completeId ? { ...item, status: "completed" } : item));
     }
     if (deleteId) {
+      stopRepeating(deleteId);
       state.reminders = state.reminders.filter((item) => item.id !== deleteId);
     }
     save();
     render();
+    hideReminderModalIfClear();
+  });
+
+  $("ackBtn").addEventListener("click", (event) => {
+    const ackId = event.target.dataset.ack;
+    if (ackId) acknowledgeReminder(ackId);
   });
 }
 
