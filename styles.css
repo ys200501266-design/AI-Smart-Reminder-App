@@ -192,6 +192,11 @@ button {
   background: #f8fafc;
 }
 
+.card.ringing {
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.16);
+}
+
 .card.done h3,
 .card.done .card-content {
   color: #94a3b8;
@@ -223,6 +228,11 @@ button {
   color: #15803d;
 }
 
+.badge.ringing {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
 .actions button {
   flex: 1;
   background: #eff6ff;
@@ -232,4 +242,34 @@ button {
 .actions .delete {
   background: #fff1f2;
   color: #e11d48;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-card {
+  width: min(100%, 390px);
+  display: grid;
+  gap: 14px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+}
+
+.modal-eyebrow {
+  color: #f97316;
+  font-size: 13px;
+  font-weight: 900;
 }
