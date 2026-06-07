@@ -123,7 +123,7 @@ Android APK 下载：
 
 [GitHub Releases - Android APK](https://github.com/ys200501266-design/AI-Smart-Reminder-App/releases/tag/android-apk-latest)
 
-说明：如果需要锁屏状态下的系统通知、手机通知栏提醒和尽可能触发震动，请安装 Android APK。网页/PWA 版本受浏览器后台限制，不能保证像系统闹钟一样在锁屏时强提醒。
+说明：如果需要锁屏状态下的系统通知、手机通知栏提醒和尽可能触发震动，请安装 Android APK。网页/PWA 版本受浏览器后台限制，不能保证像系统闹钟一样在锁屏时强提醒。APK 必须使用 release 包，debug 包会依赖 Metro 开发服务器，不能作为独立 App 使用。
 
 手机桌面安装方式：
 
